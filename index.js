@@ -1,7 +1,7 @@
 crypto = require ("crypto");
 
-module.exports.inslusionVerify = function (path, at, i, root, leaf) { 
-    return _inslusionVerify(path, at, i, root, leaf)
+module.exports.inclusionVerify = function (path, at, i, root, leaf) { 
+    return _inclusionVerify(path, at, i, root, leaf)
 };
 
 module.exports.consistencyVerify = function (path, at, i, root, leaf) { 
@@ -10,6 +10,10 @@ module.exports.consistencyVerify = function (path, at, i, root, leaf) {
 
 module.exports.digest = function (index, key, value) { 
     return _digest(index, key, value)
+};
+
+module.exports.client = function (immudbUrl) { 
+	return _client(immudbUrl)
 };
 
 const LeafPrefix = 0;
@@ -81,7 +85,7 @@ function _isPowerOfTwo(x) {
     return (x!=BigInt0 && (x & (x-BigInt1)) == BigInt0)
 }
 
-function _inslusionVerify(p, at, i, root, leaf) {
+function _inclusionVerify(p, at, i, root, leaf) {
 	at = BigInt(at)
 	i = BigInt(i)
 	
@@ -127,4 +131,30 @@ function _digest( index , key, value ) {
 	const hash = crypto.createHash('sha256');    
 	d = hash.update(c).digest()
 	return Buffer.from(d)
+}
+
+function _client(immudbUrl) {
+	if (immudbUrl) {
+		grpc = require('grpc');
+		protoLoader = require('@grpc/proto-loader');
+	
+		const PROTO_PATH = require('path').resolve(__dirname + '/schema.proto');
+	
+		const packageDefinition = protoLoader.loadSync(
+			PROTO_PATH,
+			{keepCase: true,
+			longs: String,
+			enums: String,
+			defaults: true,
+			oneofs: true
+		});
+				
+		const immudb_schema = grpc.loadPackageDefinition(packageDefinition).immudb.schema;
+		const client = new immudb_schema.ImmuService(immudbUrl, grpc.credentials.createInsecure());
+	
+		return client;
+	} else {
+		return null;
+	}
+
 }
