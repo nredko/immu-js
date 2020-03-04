@@ -38,7 +38,7 @@ const BigInt1 = BigInt("1")
 const Bigint2 = BigInt("2")
 
 
-_consistencyVerify(path, second, first, secondHash, firstHash) {
+function _consistencyVerify(path, second, first, secondHash, firstHash) {
 	first = BigInt(first)
 	second = BigInt(second)
 	let l = path.length
