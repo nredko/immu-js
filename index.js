@@ -138,7 +138,7 @@ function _client(immudbUrl) {
 		grpc = require('grpc');
 		protoLoader = require('@grpc/proto-loader');
 	
-		const PROTO_PATH = require('path').resolve('./schema.proto');
+		const PROTO_PATH = require('path').resolve(__dirname + '/schema.proto');
 	
 		const packageDefinition = protoLoader.loadSync(
 			PROTO_PATH,
