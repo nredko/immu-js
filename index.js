@@ -1,7 +1,7 @@
 crypto = require ("crypto");
 
-module.exports.inslusionVerify = function (path, at, i, root, leaf) { 
-    return _inslusionVerify(path, at, i, root, leaf)
+module.exports.inclusionVerify = function (path, at, i, root, leaf) { 
+    return _inclusionVerify(path, at, i, root, leaf)
 };
 
 module.exports.consistencyVerify = function (path, at, i, root, leaf) { 
@@ -85,7 +85,7 @@ function _isPowerOfTwo(x) {
     return (x!=BigInt0 && (x & (x-BigInt1)) == BigInt0)
 }
 
-function _inslusionVerify(p, at, i, root, leaf) {
+function _inclusionVerify(p, at, i, root, leaf) {
 	at = BigInt(at)
 	i = BigInt(i)
 	
