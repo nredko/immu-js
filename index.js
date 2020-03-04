@@ -1,19 +1,31 @@
-crypto = require ("crypto");
+var crypto = require ("crypto");
 
 module.exports.inclusionVerify = function (path, at, i, root, leaf) { 
-    return _inclusionVerify(path, at, i, root, leaf)
+  return _inclusionVerify(path, at, i, root, leaf);
 };
 
 module.exports.consistencyVerify = function (path, at, i, root, leaf) { 
-    return _consistencyVerify(path, at, i, root, leaf)
+  return _consistencyVerify(path, at, i, root, leaf);
 };
 
 module.exports.digest = function (index, key, value) { 
-    return _digest(index, key, value)
+  return _digest(index, key, value);
 };
 
-module.exports.client = function (immudbUrl) { 
-	return _client(immudbUrl)
+module.exports.init = function (immudbUrl) { 
+	return _init(immudbUrl);
+};
+
+module.exports.health = function () { 
+	return _health();
+};
+
+module.exports.safeGet = function (key, rootIndex) { 
+	return _safeGet(key, rootIndex);
+};
+
+module.exports.safeSet = function (key, value, rootIndex) { 
+	return _safeSet(key, value, rootIndex);
 };
 
 const LeafPrefix = 0;
@@ -25,7 +37,8 @@ const BigInt0 = BigInt("0")
 const BigInt1 = BigInt("1")
 const Bigint2 = BigInt("2")
 
-function _consistencyVerify(path, second, first, secondHash, firstHash) {
+
+_consistencyVerify(path, second, first, secondHash, firstHash) {
 	first = BigInt(first)
 	second = BigInt(second)
 	let l = path.length
@@ -133,28 +146,116 @@ function _digest( index , key, value ) {
 	return Buffer.from(d)
 }
 
-function _client(immudbUrl) {
-	if (immudbUrl) {
-		grpc = require('grpc');
-		protoLoader = require('@grpc/proto-loader');
+function _init(immudbUrl) {
+	try {
+		if (immudbUrl) {
+			grpc = require('grpc');
+			protoLoader = require('@grpc/proto-loader');
 	
-		const PROTO_PATH = require('path').resolve(__dirname + '/schema.proto');
+			const PROTO_PATH = require('path').resolve(__dirname + '/schema.proto');
 	
-		const packageDefinition = protoLoader.loadSync(
-			PROTO_PATH,
-			{keepCase: true,
-			longs: String,
-			enums: String,
-			defaults: true,
-			oneofs: true
-		});
-				
-		const immudb_schema = grpc.loadPackageDefinition(packageDefinition).immudb.schema;
-		const client = new immudb_schema.ImmuService(immudbUrl, grpc.credentials.createInsecure());
-	
-		return client;
-	} else {
-		return null;
+			const packageDefinition = protoLoader.loadSync(
+				PROTO_PATH,
+				{keepCase: true,
+				longs: String,
+				enums: String,
+				defaults: true,
+				oneofs: true
+			});
+					
+			const immudb_schema = grpc.loadPackageDefinition(packageDefinition).immudb.schema;
+			this.client = new immudb_schema.ImmuService(immudbUrl, grpc.credentials.createInsecure());
+		
+			this.client.CurrentRoot({}, function(err, response) {
+				if (response) {
+					return {
+						root: response.root,
+						index: response.index
+					};
+				} else if (err) {
+					console.error(err);
+				} else {
+					return null;
+				}
+			});
+		}
+	} catch (err) {
+		console.error(err);
 	}
+}
 
+function _health() {
+	try {
+		this.client.health({}, function(err, response) {
+			if (response) {
+				return {
+					root: response.root,
+					index: response.index
+				};
+			} else if (err) {
+				console.error(err);
+			} else {
+				return null;
+			}
+		}); 
+	} catch (err) {
+		console.error(err);
+	}
+}
+
+function _safeGet(key, rootIndex) {
+	try {
+		this.client.safeGet({key: key, rootIndex: rootIndex}, function(err, response) {
+			if (response) {
+				return {
+					item: {
+						key: response.item.key,
+						value: response.item.value,
+						index: response.item.index,
+					},
+					proof: {
+						leaf: response.proof.leaf,
+						index: response.proof.index,
+						root: response.proof.root,
+						at: response.proof.at,
+						inclusionPath: response.proof.inclusionPath,
+						consistencyPath: response.proof.consistencyPath
+					}
+				};
+			} else if (err) {
+				console.error(err);
+			} else {
+				return null;
+			}
+		});  
+	} catch (err) {
+		console.error(err);
+	}
+}
+
+function _safeSet(key, value, index) {
+	try {
+		this.client.safeSet({key: key, value: value, rootIndex: rootIndex}, function(err, response) {
+			if (response) {
+				
+				// TODO _inclusionVerify
+
+				return {
+					kv: {
+						key: response.key,
+						value: response.value
+					},
+					rootIndex: {
+						index: response.index
+					}
+				};
+			} else if (err) {
+				console.error(err);
+			} else {
+				return null;
+			}
+		}); 
+	} catch (err) {
+		console.error(err);
+	}
 }
