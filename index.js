@@ -12,6 +12,10 @@ module.exports.digest = function (index, key, value) {
     return _digest(index, key, value)
 };
 
+module.exports.client = function (immudbUrl) { 
+	return _client(immudbUrl)
+};
+
 const LeafPrefix = 0;
 const NodePrefix = 1;
 
@@ -127,4 +131,30 @@ function _digest( index , key, value ) {
 	const hash = crypto.createHash('sha256');    
 	d = hash.update(c).digest()
 	return Buffer.from(d)
+}
+
+function _client(immudbUrl) {
+	if (immudbUrl) {
+		grpc = require('grpc');
+		protoLoader = require('@grpc/proto-loader');
+	
+		const PROTO_PATH = require('path').resolve('./schema.proto');
+	
+		const packageDefinition = protoLoader.loadSync(
+			PROTO_PATH,
+			{keepCase: true,
+			longs: String,
+			enums: String,
+			defaults: true,
+			oneofs: true
+		});
+				
+		const immudb_schema = grpc.loadPackageDefinition(packageDefinition).immudb.schema;
+		const client = new immudb_schema.ImmuService(immudbUrl, grpc.credentials.createInsecure());
+	
+		return client;
+	} else {
+		return null;
+	}
+
 }
